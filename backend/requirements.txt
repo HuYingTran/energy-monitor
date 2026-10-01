@@ -1,0 +1,5 @@
+flask==3.0.3
+sqlalchemy==2.0.35
+influxdb-client==1.45.0
+paho-mqtt==2.1.0
+pydantic-settings==2.5.2

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}{{ device.name }} — Energy Monitor{% endblock %}
+{% block content %}
+<p><a class="row-link" href="{{ url_for('main.list_devices') }}">&larr; Danh sách thiết bị</a></p>
+<h1>{{ device.name }} <small style="color:#6b7280; font-weight:400;">({{ device.id }})</small></h1>
+
+<p>
+  <span class="badge {{ 'online' if device.online else 'offline' }}">{{ 'online' if device.online else 'offline' }}</span>
+  <span class="badge {{ 'on' if device.relay_state else 'off' }}">relay {{ 'bật' if device.relay_state else 'tắt' }}</span>
+  <span class="badge {{ 'off' if (latest and latest.power_alarm) else 'on' }}" id="s-alarm-badge">
+    {{ 'quá công suất' if (latest and latest.power_alarm) else 'bình thường' }}
+  </span>
+</p>
+
+<div class="stats" id="stats">
+  <div class="stat"><div class="label">Điện áp (V)</div><div class="value" id="s-voltage">{{ latest.voltage if latest else '—' }}</div></div>
+  <div class="stat"><div class="label">Dòng điện (A)</div><div class="value" id="s-current">{{ latest.current if latest else '—' }}</div></div>
+  <div class="stat"><div class="label">Công suất (W)</div><div class="value" id="s-power">{{ latest.power if latest else '—' }}</div></div>
+  <div class="stat"><div class="label">Điện năng (kWh)</div><div class="value" id="s-energy">{{ latest.energy if latest else '—' }}</div></div>
+  <div class="stat"><div class="label">Tần số (Hz)</div><div class="value" id="s-frequency">{{ latest.frequency if latest else '—' }}</div></div>
+  <div class="stat"><div class="label">Hệ số công suất</div><div class="value" id="s-pf">{{ latest.power_factor if latest else '—' }}</div></div>
+</div>
+
+<div class="card">
+  <form method="post" action="{{ url_for('main.set_relay', device_id=device.id) }}"
+        onsubmit="return confirm('Xác nhận {{ 'tắt' if device.relay_state else 'bật' }} nguồn thiết bị này?');">
+    <input type="hidden" name="value" value="{{ 'off' if device.relay_state else 'on' }}">
+    <button type="submit" class="{{ 'danger' if device.relay_state else '' }}">
+      {{ 'Tắt relay' if device.relay_state else 'Bật relay' }}
+    </button>
+  </form>
+</div>
+
+<h2>Lịch sử công suất (6h gần nhất)</h2>
+<table>
+  <thead><tr><th>Thời gian</th><th>V</th><th>A</th><th>W</th><th>kWh</th><th>Hz</th><th>PF</th></tr></thead>
+  <tbody>
+    {% for row in history[-30:] | reverse %}
+    <tr>
+      <td>{{ row.time }}</td>
+      <td>{{ row.voltage }}</td>
+      <td>{{ row.current }}</td>
+      <td>{{ row.power }}</td>
+      <td>{{ row.energy }}</td>
+      <td>{{ row.frequency }}</td>
+      <td>{{ row.power_factor }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7">Chưa có dữ liệu.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>Lịch sử đóng/cắt relay</h2>
+<table>
+  <thead><tr><th>Thời gian</th><th>Giá trị</th><th>Nguồn</th><th>Đã xác nhận</th></tr></thead>
+  <tbody>
+    {% for e in relay_events %}
+    <tr>
+      <td>{{ e.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+      <td>{{ 'bật' if e.value else 'tắt' }}</td>
+      <td>{{ e.source }}</td>
+      <td>{{ 'có' if e.acked else 'chưa' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4">Chưa có lịch sử.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<script>
+async function refresh() {
+  try {
+    const res = await fetch("{{ url_for('main.device_telemetry_json', device_id=device.id) }}");
+    const data = await res.json();
+    if (!data) return;
+    document.getElementById('s-voltage').textContent = data.voltage ?? '—';
+    document.getElementById('s-current').textContent = data.current ?? '—';
+    document.getElementById('s-power').textContent = data.power ?? '—';
+    document.getElementById('s-energy').textContent = data.energy ?? '—';
+    document.getElementById('s-frequency').textContent = data.frequency ?? '—';
+    document.getElementById('s-pf').textContent = data.power_factor ?? '—';
+    const alarmBadge = document.getElementById('s-alarm-badge');
+    if (data.power_alarm) {
+      alarmBadge.textContent = 'quá công suất';
+      alarmBadge.className = 'badge off';
+    } else {
+      alarmBadge.textContent = 'bình thường';
+      alarmBadge.className = 'badge on';
+    }
+  } catch (e) { /* bỏ qua lỗi mạng tạm thời */ }
+}
+setInterval(refresh, 5000);
+</script>
+{% endblock %}

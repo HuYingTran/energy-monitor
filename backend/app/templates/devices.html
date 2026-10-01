@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Thiết bị — Energy Monitor{% endblock %}
+{% block content %}
+<h1>Thiết bị</h1>
+
+<form class="toolbar" method="post" action="{{ url_for('main.create_device') }}">
+  <div class="field">
+    <label>Mã thiết bị</label>
+    <input type="text" name="id" placeholder="esp32-01" required>
+  </div>
+  <div class="field">
+    <label>Tên</label>
+    <input type="text" name="name" placeholder="Máy lạnh phòng khách">
+  </div>
+  <div class="field">
+    <label>Site</label>
+    <select name="site_id">
+      <option value="">— không —</option>
+      {% for site in sites %}
+        <option value="{{ site.id }}">{{ site.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit">Thêm thiết bị</button>
+</form>
+
+<table>
+  <thead>
+    <tr>
+      <th>Mã</th><th>Tên</th><th>Site</th><th>Trạng thái</th><th>Relay</th>
+      <th>Điện tháng này (kWh)</th><th>Ước tính tiền điện</th><th>Cập nhật cuối</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for d in devices %}
+    <tr>
+      <td><a class="row-link" href="{{ url_for('main.device_detail', device_id=d.id) }}">{{ d.id }}</a></td>
+      <td>{{ d.name }}</td>
+      <td>{{ d.site.name if d.site else '—' }}</td>
+      <td><span class="badge {{ 'online' if d.online else 'offline' }}">{{ 'online' if d.online else 'offline' }}</span></td>
+      <td><span class="badge {{ 'on' if d.relay_state else 'off' }}">{{ 'bật' if d.relay_state else 'tắt' }}</span></td>
+      <td>{{ '%.2f' | format(usage[d.id].kwh) }}</td>
+      <td>{{ '{:,.0f}'.format(usage[d.id].cost) }} đ</td>
+      <td>{{ d.last_seen.strftime('%Y-%m-%d %H:%M:%S') if d.last_seen else '—' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8">Chưa có thiết bị nào.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

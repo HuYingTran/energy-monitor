@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Cảnh báo — Energy Monitor{% endblock %}
+{% block content %}
+<h1>Cảnh báo</h1>
+
+<h2>Thêm ngưỡng cảnh báo</h2>
+<form class="toolbar" method="post" action="{{ url_for('main.create_alert_rule') }}">
+  <div class="field">
+    <label>Thiết bị</label>
+    <select name="device_id" required>
+      {% for d in devices %}
+        <option value="{{ d.id }}">{{ d.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label>Loại</label>
+    <select name="rule_type">
+      <option value="power_max">power_max</option>
+      <option value="offline_timeout">offline_timeout</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Ngưỡng</label>
+    <input type="number" step="any" name="threshold" placeholder="1000" required>
+  </div>
+  <div class="field">
+    <label><input type="checkbox" name="auto_cutoff" style="width:auto"> Tự động cắt relay</label>
+  </div>
+  <button type="submit">Thêm</button>
+</form>
+
+<h2>Ngưỡng đang cấu hình</h2>
+<table>
+  <thead><tr><th>Thiết bị</th><th>Loại</th><th>Ngưỡng</th><th>Tự cắt</th><th>Bật</th></tr></thead>
+  <tbody>
+    {% for r in rules %}
+    <tr>
+      <td>{{ r.device_id }}</td>
+      <td>{{ r.rule_type }}</td>
+      <td>{{ r.threshold }}</td>
+      <td>{{ 'có' if r.auto_cutoff else 'không' }}</td>
+      <td>{{ 'có' if r.enabled else 'không' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5">Chưa có ngưỡng nào.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>Lịch sử cảnh báo</h2>
+<table>
+  <thead><tr><th>Thời gian</th><th>Thiết bị</th><th>Nội dung</th></tr></thead>
+  <tbody>
+    {% for a in alerts %}
+    <tr>
+      <td>{{ a.triggered_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+      <td>{{ a.device_id }}</td>
+      <td>{{ a.message }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="3">Chưa có cảnh báo nào.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

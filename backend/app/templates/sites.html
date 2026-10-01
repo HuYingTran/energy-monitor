@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Site — Energy Monitor{% endblock %}
+{% block content %}
+<h1>Site</h1>
+
+<form class="toolbar" method="post" action="{{ url_for('main.create_site') }}">
+  <div class="field">
+    <label>Tên site</label>
+    <input type="text" name="name" placeholder="Nhà A" required>
+  </div>
+  <div class="field">
+    <label>Mô tả</label>
+    <input type="text" name="description" placeholder="Tầng 1-3">
+  </div>
+  <button type="submit">Thêm site</button>
+</form>
+
+<table>
+  <thead><tr><th>Tên</th><th>Mô tả</th><th>Số thiết bị</th></tr></thead>
+  <tbody>
+    {% for s in sites %}
+    <tr>
+      <td>{{ s.name }}</td>
+      <td>{{ s.description or '—' }}</td>
+      <td>{{ s.devices | length }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="3">Chưa có site nào.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
